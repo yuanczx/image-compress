@@ -1,6 +1,7 @@
 import numpy as np
 import cv2
-from utils import run_length_decode, run_length_encoding,inverse_zigzag
+from utils import run_length_decode, run_length_encoding,inverse_zigzag,quant_matrix
+from matplotlib import pyplot as plt
 def test(img):
     # 获取图像大小
     h, w = img.shape[:2]
@@ -42,8 +43,7 @@ def test(img):
     for block in blocks:
         dct_block = cv2.dct(np.float32(block))
         dct_blocks.append(dct_block)
-    
-    print(len(dct_blocks))
+
     result_blocks = []
     for dct_block in dct_blocks:
         # 量化
@@ -80,20 +80,35 @@ b = np.array([-26, -3, 1, -3, -2,  -6,   2,  -4,
               0,  0,  0,  0,  0,   0, 0, 0,
               0, 0, 0, 0, 0, 0, 0, 0])
 
-# # r = test(a)
-r = test(cv2.imread('./img/Lenna_gray.bmp',0))
-# r.astype(np.int8).tofile('./test.my')
-# print(r)
+# r = test(a)
+img = cv2.imread('./img/Lenna_gray.bmp',0)
+r = test(img)
+r.astype(np.int8).tofile('./test.my')
 
-# with open('./test.my', 'rb') as f:
-#     img_bin = np.fromfile(f, dtype=np.int8)
-#     # print(img_bin)
-#     img_bins = np.split(img_bin,np.where(img_bin==125)[0]+1)
-#     print(len(img_bins))
-#     for value in img_bins:
-#         if(len(value) == 0): break
-#         img = run_length_decode(value)
-#         print(img)
-#         img = inverse_zigzag(img)
-#         print(img)
+with open('./test.my', 'rb') as f:
+    img_bin = np.fromfile(f, dtype=np.int8)
 
+img_bins = np.split(img_bin,np.where(img_bin==125)[0]+1)
+
+result = []
+for value in img_bins:
+    if(len(value) == 0): break
+    im = run_length_decode(value)
+    im = inverse_zigzag(im)
+    im = im * quant_matrix
+    im = cv2.idct(im)
+    result.append(im)
+ 
+matrix = np.zeros((512, 512))
+
+# 遍历一维数组，将每个8*8的子矩阵复制到对应位置的512*512矩阵中
+for i in range(4096):
+    row = i // 64
+    col = i % 64
+    matrix[row*8:(row+1)*8, col*8:(col+1)*8] = np.reshape(result[i], (8, 8))
+
+print(np.allclose(matrix,img))
+print(matrix.shape)
+plt.figure()
+plt.imshow(matrix,cmap='gray')
+plt.show()
