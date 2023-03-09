@@ -5,14 +5,14 @@ import cv2
 from utils import run_length_encoding,quant_matrix
 
 if __name__ == "__main__":
-    in_image = argv[1]
-    out_image = argv[2]
-    img = cv2.imread(in_image,0)
+    if len(argv)<3 : exit('传入参数不足')
+    in_img_path = argv[1]
+    out_img_path = argv[2]
+    img = cv2.imread(in_img_path,0)
     # 获取图像大小
-    h, w = img.shape[:2]
+    h, w = img.shape
     # 块大小
     block_size = 8
-
 
     # Zigzag矩阵
     zigzag_matrix = np.array([
@@ -43,7 +43,7 @@ if __name__ == "__main__":
     for dct_block in dct_blocks:
         # 量化
         quan_block = np.round(dct_block / quant_matrix)
-        # 使用 zig-zag ‘之’字形重排序
+        # 使用 zigzag ‘之’字形重排序
         zigzag_block = quan_block.flatten()[[np.where(zigzag_matrix == index)[0][0] for index in range(64)]]
         encoded = run_length_encoding(zigzag_block)
         # zigzag_dict = dict(zip(zigzag_matrix,quan_block.flatten()))
@@ -51,8 +51,10 @@ if __name__ == "__main__":
         # for key in sorted(zigzag_dict):
         #     zigzag_block.append(zigzag_dict[key])
         result_blocks.append(encoded)
-    # 将所有块的Zigzag扫描结果连接起来
+
+    # 将所有块的Zigzag排序后结果连接起来
     result = np.concatenate(result_blocks)
-    result.astype(np.int8).tofile('./out/'+out_image)
-    print('压缩完成，文件保存至./out/',out_image)
+    # 写入文件 类型为 int8
+    result.astype(np.int8).tofile(out_img_path)
+    exit('压缩完成，文件保存至 '+out_img_path)
 
