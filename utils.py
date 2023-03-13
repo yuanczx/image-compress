@@ -1,4 +1,7 @@
 import numpy as np
+
+EOB = 127  # 块结束标志
+
 # 量化矩阵
 quant_matrix = np.array([
     [16, 11, 10, 16, 24, 40, 51, 61],
@@ -11,41 +14,34 @@ quant_matrix = np.array([
     [72, 92, 95, 98, 112, 100, 103, 99]
 ])
 
+
 # 游程编码
-
-
-def run_length_encoding(arr):
-    # 初始化结果列表和计数器
+def run_length_encode(arr):
     result = []
     count = 0
 
-    # 遍历数组中的元素
     for ele in arr:
-        # 如果元素为零，增加计数器
         if ele == 0:
             count += 1
-        # 如果元素不为零或到达数组末尾，将计数器和元素添加到结果列表，并重置计数器
         else:
             result.append(count)
             result.append(ele)
             count = 0
-
-    # 返回结果列表 使用255 表示 EOB
-    result.append(125)
+    result.append(EOB)
     return result
 
 
+# 逆游程编码
 def run_length_decode(arr):
     result = []
     count = 0
-
     for i in range(len(arr)):
-        if(arr[i] == 125):
-            result += [0]*(64-len(result))
+        if arr[i] == EOB:
+            result += [0] * (64 - len(result))
         elif i % 2 == 0:
             count = arr[i]
         else:
-            result += [0]*count
+            result += [0] * count
             result.append(arr[i])
     return np.array(result)
 
@@ -54,12 +50,11 @@ def run_length_decode(arr):
 def inverse_zigzag(arr):
     rows, cols = (8, 8)
     out = np.zeros((rows, cols))
-
     index = 0
     for i in range(rows + cols - 1):
         if i % 2 == 1:
             for j in range(min(i, rows - 1), max(0, i - cols + 1) - 1, -1):
-                out[i-j][j] = arr[index]
+                out[i - j][j] = arr[index]
                 index += 1
         else:
             for j in range(max(0, i - cols + 1), min(i, rows - 1) + 1):
